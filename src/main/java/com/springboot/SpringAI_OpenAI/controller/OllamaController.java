@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -89,7 +90,7 @@ public class OllamaController {
 		double norm2 = 0;
 
 		for (int i = 0; i < embedding1.length; i++) {
-			dotProduct += embedding1[i] + embedding2[i];
+			dotProduct += embedding1[i] * embedding2[i];
 			norm1 += Math.pow(embedding1[i], 2);
 			norm2 += Math.pow(embedding2[i], 2);
 		}
@@ -102,5 +103,13 @@ public class OllamaController {
 	public List<Document> getProduct(@RequestParam String text) {
 		return vectorStore.similaritySearch(SearchRequest.builder().query(text).topK(2).build());
 //		return vectorStore.similaritySearch(text);
+	}
+
+//	Prompt API Using RAG ----------
+
+	@PostMapping("/api/rag")
+	public String getAnswerUsingRag(@RequestParam String query) {
+		return chatClient.prompt(query).advisors(QuestionAnswerAdvisor.builder(vectorStore).build())
+				.advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, "101")).call().content();
 	}
 }
